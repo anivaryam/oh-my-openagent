@@ -12,6 +12,9 @@ import { registerManagerForCleanup } from "./features/background-agent/process-c
 import { createConfigHandler } from "./plugin-handlers"
 import { log } from "./shared"
 import { markServerRunningInProcess } from "./shared/tmux/tmux-utils/server-health"
+import { createOrchestration } from "./orchestration"
+import type { EventBus } from "./orchestration"
+import type { GlobalAgentRegistry } from "./orchestration"
 
 type CreateManagersDeps = {
   BackgroundManagerClass: typeof BackgroundManager
@@ -38,6 +41,8 @@ export type Managers = {
   backgroundManager: BackgroundManager
   skillMcpManager: SkillMcpManager
   configHandler: ReturnType<typeof createConfigHandler>
+  eventBus: EventBus
+  agentManager: GlobalAgentRegistry
 }
 
 export function createManagers(args: {
@@ -50,6 +55,8 @@ export function createManagers(args: {
 }): Managers {
   const { ctx, pluginConfig, tmuxConfig, modelCacheState, backgroundNotificationHookEnabled } = args
   const deps = { ...defaultCreateManagersDeps, ...args.deps }
+
+  const { eventBus, agentManager } = createOrchestration()
 
   if (tmuxConfig.enabled) {
     deps.markServerRunningInProcessFn()
@@ -74,6 +81,12 @@ export function createManagers(args: {
           sessionID: event.sessionID,
           parentID: event.parentID,
           title: event.title,
+        })
+
+        eventBus.publish('agent.spawn', {
+          agentId: event.sessionID,
+          sessionId: event.sessionID,
+          parentAgentId: event.parentID,
         })
 
         await tmuxSessionManager.onSessionCreated({
@@ -125,5 +138,7 @@ export function createManagers(args: {
     backgroundManager,
     skillMcpManager,
     configHandler,
+    eventBus,
+    agentManager,
   }
 }
