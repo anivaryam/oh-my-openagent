@@ -12,7 +12,7 @@
 
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "../types"
-import { isGptModel, isGeminiModel } from "../types"
+import { isGptModel, isGeminiModel, isMiniMaxModel } from "../types"
 import type { AvailableAgent, AvailableSkill, AvailableCategory } from "../dynamic-agent-prompt-builder"
 import { buildAgentIdentitySection, buildCategorySkillsDelegationGuide } from "../dynamic-agent-prompt-builder"
 import type { CategoryConfig } from "../../config/schema"
@@ -40,7 +40,7 @@ export function getAtlasPromptSource(model?: string): AtlasPromptSource {
   if (model && isGptModel(model)) {
     return "gpt"
   }
-  if (model && isGeminiModel(model)) {
+  if (model && (isGeminiModel(model) || isMiniMaxModel(model))) {
     return "gemini"
   }
   return "default"

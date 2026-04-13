@@ -241,6 +241,8 @@ Background task management:
 ${antiDuplication}
 
 Stop searching when you have enough context, the same info repeats, or two iterations found nothing new.
+
+When tool output shows "[truncated]", "showing first N of M", or "[N more lines truncated]": the target may be in the unseen results. Refine your search immediately - add a path filter, use a more specific regex, or specify a file type. Do not conclude something "does not exist" based on truncated results.
 </explore>`;
 
   const constraintsBlock = `<constraints>

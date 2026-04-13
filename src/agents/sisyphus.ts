@@ -1,6 +1,6 @@
 import type { AgentConfig } from "@opencode-ai/sdk";
 import type { AgentMode, AgentPromptMetadata } from "./types";
-import { isGptModel, isGeminiModel, isGpt5_4Model } from "./types";
+import { isGptModel, isGeminiModel, isGpt5_4Model, isMiniMaxModel } from "./types";
 import {
   buildGeminiToolMandate,
   buildGeminiDelegationOverride,
@@ -268,6 +268,13 @@ ${buildAntiDuplicationSection()}
 
 ### Search Stop Conditions
 
+### Truncated Results Protocol
+
+When tool output shows "[truncated]", "showing first N of M", or "[N more lines truncated]":
+- The target MAY be in the unseen results. You MUST refine your search immediately.
+- Narrow by: adding a path filter, using a more specific regex, or specifying a file type.
+- You MUST NOT conclude something "does not exist" based on truncated results.
+
 STOP searching when:
 - You have enough context to proceed confidently
 - Same information appearing across multiple sources
@@ -515,7 +522,7 @@ export function createSisyphusAgent(
     useTaskSystem,
   );
 
-  if (isGeminiModel(model)) {
+  if (isGeminiModel(model) || isMiniMaxModel(model)) {
     // 1. Intent gate + tool mandate - early in prompt (after intent verbalization)
     prompt = prompt.replace(
       "</intent_verbalization>",
@@ -555,6 +562,10 @@ export function createSisyphusAgent(
 
   if (isGptModel(model)) {
     return { ...base, reasoningEffort: "medium" };
+  }
+
+  if (isMiniMaxModel(model)) {
+    return base;
   }
 
   return { ...base, thinking: { type: "enabled", budgetTokens: 32000 } };

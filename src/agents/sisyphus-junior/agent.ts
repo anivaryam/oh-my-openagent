@@ -12,7 +12,7 @@
 
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode } from "../types"
-import { isGlmModel, isGptModel, isGeminiModel } from "../types"
+import { isGlmModel, isGptModel, isGeminiModel, isMiniMaxModel } from "../types"
 import type { AgentOverrideConfig } from "../../config/schema"
 import {
   createAgentToolRestrictions,
@@ -47,7 +47,7 @@ export function getSisyphusJuniorPromptSource(model?: string): SisyphusJuniorPro
     if (lower.includes("gpt-5.3-codex") || lower.includes("gpt-5-3-codex")) return "gpt-5-3-codex"
     return "gpt"
   }
-  if (model && isGeminiModel(model)) {
+  if (model && (isGeminiModel(model) || isMiniMaxModel(model))) {
     return "gemini"
   }
   return "default"
@@ -130,7 +130,7 @@ export function createSisyphusJuniorAgentWithOverrides(
     return { ...base, reasoningEffort: "medium" } as AgentConfig
   }
 
-  if (isGlmModel(model)) {
+  if (isGlmModel(model) || isMiniMaxModel(model)) {
     return base as AgentConfig
   }
 

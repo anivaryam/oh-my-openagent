@@ -6,7 +6,7 @@ import { PROMETHEUS_PLAN_TEMPLATE } from "./plan-template"
 import { PROMETHEUS_BEHAVIORAL_SUMMARY } from "./behavioral-summary"
 import { getGptPrometheusPrompt } from "./gpt"
 import { getGeminiPrometheusPrompt } from "./gemini"
-import { isGptModel, isGeminiModel } from "../types"
+import { isGptModel, isGeminiModel, isMiniMaxModel } from "../types"
 
 /**
  * Combined Prometheus system prompt (Claude-optimized, default).
@@ -40,7 +40,7 @@ export function getPrometheusPromptSource(model?: string): PrometheusPromptSourc
   if (model && isGptModel(model)) {
     return "gpt"
   }
-  if (model && isGeminiModel(model)) {
+  if (model && (isGeminiModel(model) || isMiniMaxModel(model))) {
     return "gemini"
   }
   return "default"

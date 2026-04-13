@@ -1,6 +1,7 @@
 import type { PluginInput } from "@opencode-ai/plugin"
 import type { ExperimentalConfig } from "../config/schema"
 import { createDynamicTruncator } from "../shared/dynamic-truncator"
+import { getSessionModel } from "../shared/session-model-state"
 
 const DEFAULT_MAX_TOKENS = 50_000 // ~200k chars
 const WEBFETCH_MAX_TOKENS = 10_000 // ~40k chars - web pages need aggressive truncation
@@ -47,10 +48,11 @@ export function createToolOutputTruncatorHook(ctx: PluginInput, options?: ToolOu
 
     try {
       const targetMaxTokens = TOOL_SPECIFIC_MAX_TOKENS[input.tool] ?? DEFAULT_MAX_TOKENS
+      const sessionModel = getSessionModel(input.sessionID)
       const { result, truncated } = await truncator.truncate(
         input.sessionID,
         output.output,
-        { targetMaxTokens }
+        { targetMaxTokens, modelID: sessionModel?.modelID }
       )
       if (truncated) {
         output.output = result

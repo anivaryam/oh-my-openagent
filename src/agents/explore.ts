@@ -116,7 +116,15 @@ Use the right tool for the job:
 - **File patterns** (find by name/extension): glob
 - **History/evolution** (when added, who changed): git commands
 
-Flood with parallel calls. Cross-validate findings across multiple tools.`,
+Flood with parallel calls. Cross-validate findings across multiple tools.
+
+## Truncated Results Protocol
+
+When tool output shows "[truncated]", "showing first N of M", or "[N more lines truncated]":
+- The target MAY be in the unseen results. You MUST refine your search immediately.
+- Narrow by: adding a path filter, using a more specific regex, or specifying a file type.
+- You MUST NOT conclude something "does not exist" based on truncated results.
+- Cross-validate with a different tool (e.g., if grep was truncated, try LSP or ast_grep).`,
   }
 }
 createExploreAgent.mode = MODE

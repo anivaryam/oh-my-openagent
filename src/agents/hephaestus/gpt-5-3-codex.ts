@@ -307,6 +307,13 @@ ${buildAntiDuplicationSection()}
 
 ### Search Stop Conditions
 
+### Truncated Results Protocol
+
+When tool output shows "[truncated]", "showing first N of M", or "[N more lines truncated]":
+- The target MAY be in the unseen results. You MUST refine your search immediately.
+- Narrow by: adding a path filter, using a more specific regex, or specifying a file type.
+- You MUST NOT conclude something "does not exist" based on truncated results.
+
 STOP searching when:
 - You have enough context to proceed confidently
 - Same information appearing across multiple sources

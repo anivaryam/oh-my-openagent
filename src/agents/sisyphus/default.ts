@@ -338,6 +338,13 @@ result = task(..., run_in_background=false)  // Never wait synchronously for exp
 
 ${buildAntiDuplicationSection()}
 
+### Truncated Results Protocol
+
+When tool output shows "[truncated]", "showing first N of M", or "[N more lines truncated]":
+- The target MAY be in the unseen results. You MUST refine your search immediately.
+- Narrow by: adding a path filter, using a more specific regex, or specifying a file type.
+- You MUST NOT conclude something "does not exist" based on truncated results.
+
 ### Search Stop Conditions
 
 STOP searching when:

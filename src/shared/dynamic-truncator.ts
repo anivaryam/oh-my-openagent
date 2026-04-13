@@ -8,6 +8,37 @@ import { normalizeSDKResponse } from "./normalize-sdk-response"
 const CHARS_PER_TOKEN_ESTIMATE = 4;
 const DEFAULT_TARGET_MAX_TOKENS = 50_000;
 
+/**
+ * Models that benefit from directive-style truncation footers
+ * instead of passive warnings. These models may ignore or misinterpret
+ * simple "[truncated]" messages.
+ */
+function isSmallParameterModel(modelID: string): boolean {
+	const name = modelID.toLowerCase()
+	return (
+		name.includes("minimax") ||
+		name.includes("grok") ||
+		name.includes("nano") ||
+		name.includes("haiku") ||
+		name.includes("flash") ||
+		name.includes("glm")
+	)
+}
+
+function buildTruncationFooter(removedCount: number, modelID?: string): string {
+	if (modelID && isSmallParameterModel(modelID)) {
+		return `\n\n<TRUNCATION_PROTOCOL>\nNOTICE: ${removedCount} lines were omitted from these results.\nREASON: Context window preservation.\nREQUIRED_ACTION: You MUST refine your search to be more specific. Add a path filter, use a tighter regex, or specify a file type.\nDO NOT assume the target is absent from the codebase.\n</TRUNCATION_PROTOCOL>`
+	}
+	return `\n\n[${removedCount} more lines truncated due to context window limit]`
+}
+
+function buildExhaustedFooter(modelID?: string): string {
+	if (modelID && isSmallParameterModel(modelID)) {
+		return "<TRUNCATION_PROTOCOL>\nNOTICE: Output suppressed - context window exhausted.\nREQUIRED_ACTION: You MUST use more targeted tool calls with narrower scope.\n</TRUNCATION_PROTOCOL>"
+	}
+	return "[Output suppressed - context window exhausted]"
+}
+
 interface AssistantMessageInfo {
 	role: "assistant";
 	providerID?: string;
@@ -34,6 +65,8 @@ export interface TruncationOptions {
 	targetMaxTokens?: number;
 	preserveHeaderLines?: number;
 	contextWindowLimit?: number;
+	/** Model ID for generating model-aware truncation footers */
+	modelID?: string;
 }
 
 function estimateTokens(text: string): number {
@@ -44,6 +77,7 @@ export function truncateToTokenLimit(
 	output: string,
 	maxTokens: number,
 	preserveHeaderLines = 3,
+	modelID?: string,
 ): TruncationResult {
 	if (typeof output !== 'string') {
 		return { result: String(output ?? ''), truncated: false };
@@ -102,7 +136,7 @@ export function truncateToTokenLimit(
 	return {
 		result:
 			truncatedContent +
-			`\n\n[${removedCount} more lines truncated due to context window limit]`,
+			buildTruncationFooter(removedCount, modelID),
 		truncated: true,
 		removedCount,
 	};
@@ -175,13 +209,14 @@ export async function dynamicTruncate(
 	const {
 		targetMaxTokens = DEFAULT_TARGET_MAX_TOKENS,
 		preserveHeaderLines = 3,
+		modelID,
 	} = options;
 
 	const usage = await getContextWindowUsage(ctx, sessionID, modelCacheState);
 
 	if (!usage) {
 		// Fallback: apply conservative truncation when context usage unavailable
-		return truncateToTokenLimit(output, targetMaxTokens, preserveHeaderLines);
+		return truncateToTokenLimit(output, targetMaxTokens, preserveHeaderLines, modelID);
 	}
 
 	const maxOutputTokens = Math.min(
@@ -191,12 +226,12 @@ export async function dynamicTruncate(
 
 	if (maxOutputTokens <= 0) {
 		return {
-			result: "[Output suppressed - context window exhausted]",
+			result: buildExhaustedFooter(modelID),
 			truncated: true,
 		};
 	}
 
-	return truncateToTokenLimit(output, maxOutputTokens, preserveHeaderLines);
+	return truncateToTokenLimit(output, maxOutputTokens, preserveHeaderLines, modelID);
 }
 
 export function createDynamicTruncator(
@@ -217,6 +252,7 @@ export function createDynamicTruncator(
 			output: string,
 			maxTokens: number,
 			preserveHeaderLines?: number,
-		) => truncateToTokenLimit(output, maxTokens, preserveHeaderLines),
+			modelID?: string,
+		) => truncateToTokenLimit(output, maxTokens, preserveHeaderLines, modelID),
 	};
 }
