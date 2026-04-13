@@ -37,7 +37,6 @@ import { dispatchOpenClawEvent } from "../openclaw/runtime-dispatch";
 
 import type { CreatedHooks } from "../create-hooks";
 import type { Managers } from "../create-managers";
-import { isTmuxIntegrationEnabled } from "../create-runtime-tmux-config";
 import { pruneRecentSyntheticIdles } from "./recent-synthetic-idles";
 import { normalizeSessionStatusToIdle } from "./session-status-normalizer";
 
@@ -141,7 +140,7 @@ export function createEventHandler(args: {
   hooks: CreatedHooks;
 }): (input: EventInput) => Promise<void> {
   const { ctx, pluginConfig, firstMessageVariantGate, managers, hooks } = args;
-  const tmuxIntegrationEnabled = isTmuxIntegrationEnabled(pluginConfig)
+  const tmuxIntegrationEnabled = pluginConfig.tmux?.enabled ?? false;
   const pluginContext = ctx as {
     directory: string;
     client: {
@@ -324,7 +323,6 @@ export function createEventHandler(args: {
         const emittedAt = recentSyntheticIdles.get(sessionID);
         if (emittedAt && Date.now() - emittedAt < DEDUP_WINDOW_MS) {
           recentSyntheticIdles.delete(sessionID);
-          return;
         }
         recentRealIdles.set(sessionID, Date.now());
       }
@@ -382,7 +380,10 @@ export function createEventHandler(args: {
         );
       }
 
-      if (pluginConfig.openclaw && sessionInfo?.id) {
+      // Skip subagent sessions — they are dispatched by specialized callbacks
+      // in create-managers.ts (async) and tool-registry.ts (sync)
+      const isSubagentSession = !!sessionInfo?.parentID;
+      if (pluginConfig.openclaw && sessionInfo?.id && !isSubagentSession) {
         await dispatchOpenClawEvent({
           config: pluginConfig.openclaw,
           rawEvent: event.type,
